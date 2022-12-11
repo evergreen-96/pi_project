@@ -99,7 +99,7 @@ apt-get -y install openssh-server zip unrar mc apache2 php7.0 mysql-server libap
 ;;
 "3" )
 echo "В разработке"
-
+;;
 * )
 echo "Для установки на других операционных системах обратитесь к документации"
 exit
@@ -191,6 +191,7 @@ reset
 echo
 echo
 echo "Создается новый пользователь панели управления"
+echo
 echo "Введите логин администратора панели управления"
 read login
 
