@@ -100,6 +100,7 @@ apt-get -y install openssh-server zip unrar mc apache2 php7.0 mysql-server libap
 
 "3" )
 echo "В разработке"
+exit
 ;;
 
 * )
