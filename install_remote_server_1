@@ -1,0 +1,286 @@
+#!/bin/bash
+
+reset
+#Выбор ОС
+echo
+echo
+echo "Удалить apache2, php, mysql, composer"
+echo "1 - Да"
+echo "2 - Нет"
+echo "-------------"
+read Keypres
+
+case "$Keypres" in
+
+"1" )
+sudo apt-get remove phpmyadmin
+
+sudo apt-get remove php5-mysql
+sudo apt-get remove php7.0-mysql
+sudo apt-get remove php7.1-mysql
+sudo apt-get remove php7.4-mysql
+
+sudo apt-get remove libapache2-mod-php5
+sudo apt-get remove libapache2-mod-php7.0
+sudo apt-get remove libapache2-mod-php7.1
+sudo apt-get remove libapache2-mod-php7.4
+
+sudo apt-get remove mysql-server
+
+sudo apt-get remove php5
+sudo apt-get remove php7.0
+sudo apt-get remove php7.1
+sudo apt-get remove php7.4
+
+sudo apt-get remove apache2
+
+sudo rm -rf /root/.composer
+
+sudo rm -rf /run/.composer
+sudo rm -rf /var/www/html/updatevermax
+sudo rm -rf /usr/local/bin/composer
+
+sudo rm -rf .composer
+sudo rm -rf /.composer
+;;
+
+"2" )
+echo "Далее будут установлены все компоненты"
+;;
+
+esac
+
+reset
+echo
+echo
+echo "Продолжить ?"
+echo "1 - Да"
+echo "2 - Нет"
+echo "-------------"
+read Keypres
+
+case "$Keypres" in
+
+"1" )
+echo "Далее"
+;;
+
+"2" )
+echo "Остановка"
+echo
+exit
+;;
+esac
+
+reset
+echo
+echo
+echo "Укажите вашу операцинную систему"
+echo "1 - Ubuntu 14.04"
+echo "2 - Ubuntu 16.04"
+echo "3 - Ubuntu 18.04 / 20.04.1"
+echo "Any key - Other"
+echo "-------------"
+read Keypres
+
+
+case "$Keypres" in
+
+"1" )
+apt-get -y update
+apt-get -y upgrade
+apt-get -y install openssh-server zip unrar mc apache2 php5 mysql-server libapache2-mod-php5 php5-mysql phpmyadmin git
+;;
+
+"2" )
+apt-get -y update
+apt-get -y upgrade
+apt-get -y install openssh-server zip unrar mc apache2 php7.0 mysql-server libapache2-mod-php7.0 php7.0-mysql phpmyadmin git
+;;
+
+"3" )
+echo "В разработке"
+exit
+;;
+
+* )
+echo "Для установки на других операционных системах обратитесь к документации"
+exit
+;;
+
+esac
+
+reset
+echo
+echo
+echo "Повторите ранее введенный пароль пользователя root mysql"
+read pass
+a2enmod rewrite
+
+#Клонирование репозитария
+sudo mkdir /var/www/html/updatevermax
+cd /var/www/html/updatevermax/
+sudo git clone https://github.com/shopnagru/vermax.git .
+
+echo '<?php' > config/db.php
+echo "return [" >> config/db.php
+echo "'class' => 'yii\db\Connection'," >> config/db.php
+echo "'dsn' => 'mysql:host=localhost;dbname=vermax'," >> config/db.php
+echo "'username' => 'root'," >> config/db.php
+echo "'password' => '"$pass"'," >> config/db.php
+echo "'charset' => 'utf8'," >> config/db.php
+echo "];" >> config/db.php
+
+
+#Скрипт проверки Хэш-суммы
+touch ./my_php
+echo '<?php' > ./my_php
+echo "\$url = file_get_contents('https://getcomposer.org/download/');" >> ./my_php
+echo "\$find_str_start = 'php\') === \'';" >> ./my_php
+echo "\$find_str_end = '\') { echo \'Installer verified\';';" >> ./my_php
+echo "\$pos_start  = strripos(\$url, \$find_str_start);" >> ./my_php
+echo "\$pos_end = strripos(\$url, \$find_str_end);" >> ./my_php
+echo "if ((\$pos_start === false) and (\$pos_end === false)) {" >> ./my_php
+echo "echo 'Начало и конец хэш-суммы, не найдены';" >> ./my_php
+echo "} else {" >> ./my_php
+echo "\$pos_start = \$pos_start + 11;" >> ./my_php
+echo "\$length_hash = \$pos_end - \$pos_start;" >> ./my_php
+echo "\$hash_summ = substr(\$url, \$pos_start, \$length_hash);" >> ./my_php
+echo "echo(\$hash_summ);" >> ./my_php
+echo "}" >> ./my_php
+echo "?>" >> ./my_php
+
+hash_summ=$(php "./my_php");
+echo $hash_summ
+
+# Установка композитора
+sudo php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');"
+sudo php -r "if (hash_file('sha384', 'composer-setup.php') === '"$hash_summ"') { echo 'Installer verified'; } else { echo 'Installer corrupt'; unlink('composer-setup.php'); } echo PHP_EOL;"
+sudo php composer-setup.php --version=1.10.17
+sudo php -r "unlink('composer-setup.php');"
+
+sudo mv composer.phar /usr/local/bin/composer
+sudo composer require kartik-v/yii2-widgets "*" 
+sudo composer update 
+sudo chmod -R 777 runtime/
+sudo mkdir web/assets
+sudo chmod -R 777 web/assets/
+sudo mv vendor/bower-asset vendor/bower
+sudo rm ./my_php
+
+
+# Дамп БД
+sudo wget http://data.vermax.com/middleware/installVermax2X.zip
+sudo unzip ./*.zip
+sudo rm /etc/apache2/sites-available/updatevermax.conf
+sudo cp /var/www/html/updatevermax/updatevermax.conf /etc/apache2/sites-available/updatevermax.conf
+a2dissite 000-default && sudo a2ensite updatevermax
+apache2ctl restart
+
+#sudo ln -s /etc/phpmyadmin/apache.conf /etc/apache2/conf-available/phpmyadmin.conf
+#sudo a2enconf phpmyadmin
+#sudo /etc/init.d/apache2 reload
+
+sudo mkdir /var/www/html/updatevermax/web/Vermax\ HD100/
+sudo mkdir /var/www/html/updatevermax/web/Vermax\ UHD200/
+sudo mkdir /var/www/html/updatevermax/web/Vermax\ UHD/
+sudo mkdir /var/www/html/updatevermax/web/Vermax\ UHDX/
+
+#Копирование БД
+mysql -u root -p$pass -e 'CREATE DATABASE vermax';
+mysql -D vermax -u root -p$pass < /var/www/html/updatevermax/vermax.sql
+
+reset
+echo
+echo
+echo "Создается новый пользователь панели управления"
+echo "Введите логин администратора панели управления"
+read login
+
+echo "Введите пароль администратора панели управления"
+read password
+pas=`echo -n $password | md5sum | cut -c1-32`
+
+mysql -u root -p$pass -e "INSERT INTO  vermax.managers (id, username, password, provider, role) VALUES (NULL, '"$login"', '"$pas"', '', 'admin');"
+
+#Выбор прошивки
+echo "Выбирете ветку прошивки"
+echo "1 IPTV-плеер"
+echo "2 24h.TV"
+echo "3 Смотрешка"
+echo "4 IPTVportal"
+echo "5 Peers.TV"
+echo "6 Impuls TV"
+echo "*  Прочее"
+echo "-------------"
+read Keypress
+
+case "$Keypress" in
+
+"1" )
+cd /var/www/html/updatevermax/web/Vermax\ HD100/
+sudo wget http://data.vermax.com/Vermax%20HD100/1.3.2Cr.zip
+
+cd /var/www/html/updatevermax/web/Vermax\ UHD/
+sudo wget http://data.nag.ru/private/Vermax_STB/UHD/UHD-20170822-url-nag-ota-nag-v05.01.10334-sign-nag-prof-nag.zip
+sudo cp /var/www/html/updatevermax/web/Vermax\ UHD/UHD-20170822-url-nag-ota-nag-v05.01.10334-sign-nag-prof-nag.zip /var/www/html/updatevermax/web/Vermax\ UHD200/UHD-20170822-url-nag-ota-nag-v05.01.10334-sign-nag-prof-nag.zip
+cd /var/www/html/updatevermax/web/Vermax\ UHDX/
+sudo wget http://data.nag.ru/private/Vermax_STB/UHDX693/UHDX-20180827-ota-v7.1.693_NAG.zip
+;;
+
+"2" )
+cd /var/www/html/updatevermax/web/Vermax\ UHD/
+sudo wget http://data.nag.ru/private/Vermax_STB/UHD/UHD-20170822-url-nag-ota-nag-v05.01.10334-sign-nag-prof-24htv_nag.zip
+sudo cp /var/www/html/updatevermax/web/Vermax\ UHD/UHD-20170822-url-nag-ota-nag-v05.01.10334-sign-nag-prof-24htv_nag.zip /var/www/html/updatevermax/web/Vermax\ UHD200/UHD-20170822-url-nag-ota-nag-v05.01.10334-sign-nag-prof-24htv_nag.zip
+cd /var/www/html/updatevermax/web/Vermax\ UHDX/
+sudo wget http://data.nag.ru/private/Vermax_STB/UHDX693/UHDX-20180924-ota-v7.1.693_24htv-nag.zip
+;;
+
+"3" )
+cd /var/www/html/updatevermax/web/Vermax\ UHD/
+sudo wget http://data.nag.ru/private/Vermax_STB/UHD/UHD-20170822-url-nag-ota-nag-v05.01.10334-sign-nag-prof-Smotreshka.zip
+sudo cp /var/www/html/updatevermax/web/Vermax\ UHD/UHD-20170822-url-nag-ota-nag-v05.01.10334-sign-nag-prof-Smotreshka.zip /var/www/html/updatevermax/web/Vermax\ UHD200/UHD-20170822-url-nag-ota-nag-v05.01.10334-sign-nag-prof-Smotreshka.zip
+cd /var/www/html/updatevermax/web/Vermax\ UHDX/
+sudo wget http://data.nag.ru/private/Vermax_STB/UHDX693/UHDX-20181102-ota-v7.1.693_Smotrechka.zip
+;;
+
+"4" )
+cd /var/www/html/updatevermax/web/Vermax\ UHD/
+sudo wget http://data.nag.ru/private/Vermax_STB/UHD/UHD-20180125-url-nag-ota-nag-v05.01.10334-sign-nag-prof-iptvportal.zip
+sudo cp /var/www/html/updatevermax/web/Vermax\ UHD/UHD-20170822-url-nag-ota-nag-v05.01.10334-sign-nag-prof-iptvportal.zip /var/www/html/updatevermax/web/Vermax\ UHD200/UHD-20170822-url-nag-ota-nag-v05.01.10334-sign-nag-prof-iptvportal.zip
+cd /var/www/html/updatevermax/web/Vermax\ UHDX/
+sudo wget http://data.nag.ru/private/Vermax_STB/UHDX693/UHDX-20181102-ota-v7.1.693_IPTVPORTAL.zip
+;;
+
+"5" )
+cd /var/www/html/updatevermax/web/Vermax\ UHD/
+sudo wget http://data.nag.ru/private/Vermax_STB/UHD/UHD-20170925-url-nag-ota-nag-v05.01.10334-sign-nag-prof-peerstv.zip
+sudo cp /var/www/html/updatevermax/web/Vermax\ UHD/UHD-20170925-url-nag-ota-nag-v05.01.10334-sign-nag-prof-peerstv.zip /var/www/html/updatevermax/web/Vermax\ UHD200/UHD-20170925-url-nag-ota-nag-v05.01.10334-sign-nag-prof-peerstv.zip
+cd /var/www/html/updatevermax/web/Vermax\ UHDX/
+sudo wget http://data.nag.ru/private/Vermax_STB/UHDX693/UHDX-20180802-ota-v7.1.693_PeersTV.zip
+;;
+
+"6" )
+cd /var/www/html/updatevermax/web/Vermax\ UHD/
+sudo wget http://data.nag.ru/private/Vermax_STB/UHD/UHD-20171025-url-nag-ota-nag-v05.01.10334-sign-nag-prof-impulstv.zip
+sudo cp /var/www/html/updatevermax/web/Vermax\ UHD/UHD-20171025-url-nag-ota-nag-v05.01.10334-sign-nag-prof-impulstv.zip /var/www/html/updatevermax/web/Vermax\ UHD200/UHD-20171025-url-nag-ota-nag-v05.01.10334-sign-nag-prof-impulstv.zip
+cd /var/www/html/updatevermax/web/Vermax\ UHDX/
+sudo wget http://data.nag.ru/private/Vermax_STB/UHDX607/UHDX-20180427-ota-v7.1.607-mikroimpuls-nag.zip
+;;
+
+* )
+echo "Обратитесть на sales@nag.ru или к вашему персональному менеджеру для запроса прошивки"
+;;
+
+esac
+
+
+reset
+
+
+echo
+echo
+echo
+echo "Установка завершена."
+
+
