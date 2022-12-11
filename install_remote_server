@@ -98,7 +98,7 @@ apt-get -y upgrade
 apt-get -y install openssh-server zip unrar mc apache2 php7.0 mysql-server libapache2-mod-php7.0 php7.0-mysql phpmyadmin git
 ;;
 "3" )
-echo "В разработке"
+echo "В разработк..."
 ;;
 * )
 echo "Для установки на других операционных системах обратитесь к документации"
