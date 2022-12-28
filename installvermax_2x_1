@@ -276,7 +276,7 @@ sudo mkdir /var/www/html/updatevermax/web/Vermax\ UHDX/
 
 #Копирование БД
 mysql -u root -p$pass -e 'CREATE DATABASE vermax';
-mysql -D vermax -u root -p$pass < /var/www/html/updatevermax/vermax.sql
+mysql -D vermax -u root -p$pass < /home/roman/lab15/vermax.sql
 
 reset
 echo
