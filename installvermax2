@@ -291,9 +291,6 @@ pas=`echo -n $password | md5sum | cut -c1-32`
 
 mysql -u root -p$pass -e "INSERT INTO  vermax.managers (id, username, password, provider, role) VALUES (NULL, '"$login"', '"$pas"', '', 'admin');"
 
-
-mysql -u root -p$pass -e "INSERT INTO  vermax.requests_monitor (`id`, `ip`, `mac`, `version`, `fw`, `type`, `response`, `time`) VALUES (2, '0.0.0.0', 'test_mac', 'v1.2', 'Новиков', 'Тестовая запись', 'UHD200_def', '2022-12-12 00:00:50');"
-
 #Выбор прошивки
 echo "Выбирете ветку прошивки"
 echo "1 IPTV-плеер"
